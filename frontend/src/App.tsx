@@ -1,6 +1,9 @@
 import { Disclosure } from "@headlessui/react";
 import { MenuIcon, XIcon } from "@heroicons/react/outline";
 import { useForm } from "react-hook-form";
+import { Listbox, Transition } from "@headlessui/react";
+import { CheckIcon, SelectorIcon } from "@heroicons/react/solid";
+import { useState, Fragment } from "react";
 
 const logo = require("./assets/setting.png");
 
@@ -8,8 +11,33 @@ function classNames(...classes: any) {
   return classes.filter(Boolean).join(" ");
 }
 
+interface Breed {
+  label: string;
+  value: number;
+}
+
 function App() {
   const {} = useForm();
+  const [selected, setSelected] = useState({
+    label: "Nelore",
+    value: 1.6,
+  } as Breed);
+  const [input, setInput] = useState<number>(12.5);
+
+  const breeds = [
+    {
+      label: "Nelore",
+      value: 1.6,
+    },
+    {
+      label: "Angus",
+      value: 1.8,
+    },
+    {
+      label: "Cruzado",
+      value: 1.2,
+    },
+  ];
 
   return (
     <>
@@ -71,7 +99,7 @@ function App() {
         <main>
           <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             <div className="px-4 py-6 sm:px-0">
-              <div className="border-4 border-dashed border-gray-200 rounded-lg h-96">
+              <div className="border-4 border-dashed border-gray-200 rounded-lg">
                 <div className="mt-5 md:mt-0 md:col-span-2">
                   <form action="#" method="POST">
                     <div className="shadow overflow-hidden sm:rounded-md">
@@ -82,112 +110,117 @@ function App() {
                               htmlFor="first-name"
                               className="block text-sm font-medium text-gray-700"
                             >
-                              Capital Inicial (R$)
+                              Peso de Entrada (@)
                             </label>
                             <input
                               type="number"
                               name="first-name"
                               id="first-name"
+                              value={input}
+                              onChange={e => {
+                                setInput(Number(e.target.value))
+                              }}
                               autoComplete="given-name"
                               className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                             />
                           </div>
+                          <div className="col-span-6 sm:col-span-3">
+                            <Listbox value={selected} onChange={setSelected}>
+                              {({ open }) => (
+                                <>
+                                  <Listbox.Label className="block text-sm font-medium text-gray-700">
+                                    Raça
+                                  </Listbox.Label>
+                                  <div className="mt-1 relative">
+                                    <Listbox.Button className="relative w-full bg-white border border-gray-300 rounded-md shadow-sm pl-3 pr-10 py-2 text-left cursor-default focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                      <span className="flex items-center">
+                                        <span className="ml-3 block truncate">
+                                          {selected.label}
+                                        </span>
+                                      </span>
+                                      <span className="ml-3 absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                        <SelectorIcon
+                                          className="h-5 w-5 text-gray-400"
+                                          aria-hidden="true"
+                                        />
+                                      </span>
+                                    </Listbox.Button>
 
-                          <div className="col-span-6 sm:col-span-4">
-                            <label
-                              htmlFor="email-address"
-                              className="block text-sm font-medium text-gray-700"
-                            >
-                              Email address
-                            </label>
-                            <input
-                              type="text"
-                              name="email-address"
-                              id="email-address"
-                              autoComplete="email"
-                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                            />
+                                    <Transition
+                                      show={open}
+                                      as={Fragment}
+                                      leave="transition ease-in duration-100"
+                                      leaveFrom="opacity-100"
+                                      leaveTo="opacity-0"
+                                    >
+                                      <Listbox.Options className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-56 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                                        {breeds.map((breed) => (
+                                          <Listbox.Option
+                                            key={breed.value}
+                                            className={({ active }) =>
+                                              classNames(
+                                                active
+                                                  ? "text-white bg-indigo-600"
+                                                  : "text-gray-900",
+                                                "cursor-default select-none relative py-2 pl-3 pr-9"
+                                              )
+                                            }
+                                            value={breed}
+                                          >
+                                            {({ selected, active }) => (
+                                              <>
+                                                <div className="flex items-center">
+                                                  <span
+                                                    className={classNames(
+                                                      selected
+                                                        ? "font-semibold"
+                                                        : "font-normal",
+                                                      "ml-3 block truncate"
+                                                    )}
+                                                  >
+                                                    {breed.label}
+                                                  </span>
+                                                </div>
+
+                                                {selected ? (
+                                                  <span
+                                                    className={classNames(
+                                                      active
+                                                        ? "text-white"
+                                                        : "text-indigo-600",
+                                                      "absolute inset-y-0 right-0 flex items-center pr-4"
+                                                    )}
+                                                  >
+                                                    <CheckIcon
+                                                      className="h-5 w-5"
+                                                      aria-hidden="true"
+                                                    />
+                                                  </span>
+                                                ) : null}
+                                              </>
+                                            )}
+                                          </Listbox.Option>
+                                        ))}
+                                      </Listbox.Options>
+                                    </Transition>
+                                  </div>
+                                </>
+                              )}
+                            </Listbox>
                           </div>
-
                           <div className="col-span-6 sm:col-span-3">
                             <label
-                              htmlFor="country"
+                              htmlFor="first-name"
                               className="block text-sm font-medium text-gray-700"
                             >
-                              Country
-                            </label>
-                            <select
-                              id="country"
-                              name="country"
-                              autoComplete="country-name"
-                              className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                            >
-                              <option>United States</option>
-                              <option>Canada</option>
-                              <option>Mexico</option>
-                            </select>
-                          </div>
-
-                          <div className="col-span-6">
-                            <label
-                              htmlFor="street-address"
-                              className="block text-sm font-medium text-gray-700"
-                            >
-                              Street address
+                              Peso de Saida (@)
                             </label>
                             <input
-                              type="text"
-                              name="street-address"
-                              id="street-address"
-                              autoComplete="street-address"
-                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                            />
-                          </div>
-
-                          <div className="col-span-6 sm:col-span-6 lg:col-span-2">
-                            <label
-                              htmlFor="city"
-                              className="block text-sm font-medium text-gray-700"
-                            >
-                              City
-                            </label>
-                            <input
-                              type="text"
-                              name="city"
-                              id="city"
-                              autoComplete="address-level2"
-                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                            />
-                          </div>
-
-                          <div className="col-span-6 sm:col-span-3 lg:col-span-2">
-                            <label
-                              htmlFor="region"
-                              className="block text-sm font-medium text-gray-700"
-                            >
-                              State / Province
-                            </label>
-                            <input
-                              type="text"
-                              name="region"
-                              id="region"
-                              autoComplete="address-level1"
-                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                            />
-                          </div>
-
-                          <div className="col-span-6 sm:col-span-3 lg:col-span-2">
-                            <label
-                              htmlFor="postal-code"
-                              className="block text-sm font-medium text-gray-700"
-                            >
-                              ZIP / Postal code
-                            </label>
-                            <input
-                              type="text"
-                              name="postal-code"
-                              id="postal-code"
-                              autoComplete="postal-code"
+                              disabled
+                              type="number"
+                              name="first-name"
+                              id="first-name"
+                              value={input + (selected.value * 105) / 30}
                               className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                             />
                           </div>
@@ -198,13 +231,16 @@ function App() {
                           type="submit"
                           className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                         >
-                          Save
+                          Otimizar
                         </button>
                       </div>
                     </div>
                   </form>
                 </div>
               </div>
+            </div>
+            <div className="px-4 py-6 sm:px-0">
+              <div className="border-4 border-dashed border-gray-200 rounded-lg h-96"></div>
             </div>
           </div>
         </main>
