@@ -101,7 +101,9 @@ function App() {
             <div className="px-4 py-6 sm:px-0">
               <div className="border-4 border-dashed border-gray-200 rounded-lg">
                 <div className="mt-5 md:mt-0 md:col-span-2">
-                  <form action="#" method="POST">
+                  <form onSubmit={e => {
+                    e.preventDefault();
+                  }}>
                     <div className="shadow overflow-hidden sm:rounded-md">
                       <div className="px-4 py-5 bg-white sm:p-6">
                         <div className="grid grid-cols-6 gap-6">
