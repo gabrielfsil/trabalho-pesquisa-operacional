@@ -1,10 +1,12 @@
 import { formatMonth } from "@shared/utils/date";
 import { readFileStream } from "@shared/utils/readFileStream";
 import express from "express";
+import cors from "cors";
 const GLPK = require("glpk.js");
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
 interface Data {
@@ -13,7 +15,19 @@ interface Data {
 }
 
 app.post("/optimize", async (request, response) => {
-  const { weight_input = 12.5, weight_output = 17.4 } = request.body;
+  const {
+    bull_purchase_price,
+    bull_sale_price,
+    corn_purchase_price,
+    capital,
+    minimum_lot,
+    corral_area,
+    water_capacity,
+    trough_length,
+    angus_production,
+    nelore_production,
+    input_weight,
+  } = request.body;
 
   const glpk = GLPK();
 
@@ -26,143 +40,108 @@ app.post("/optimize", async (request, response) => {
     },
   };
 
-  const datesBullSale = [
-    "01/10/2020",
-    "01/11/2020",
-    "01/12/2020",
-    "01/01/2021",
-    "01/02/2021",
-    "01/03/2021",
-    "01/04/2021",
-    "01/05/2021",
-    "01/06/2021",
-    "01/07/2021",
-    "01/08/2021",
-    "01/09/2021",
-    "01/10/2021",
-    "01/11/2021",
-    "01/12/2021",
-  ];
+  const productionAngus = (115 * 1.6 + input_weight) / 2;
+  const productionNelore = (120 * 1.2 + input_weight) / 2;
+  const productionCruzado = (130 * 1 + input_weight) / 2;
 
-  const dates = [
-    "01/01/2021",
-    "01/02/2021",
-    "01/03/2021",
-    "01/04/2021",
-    "01/05/2021",
-    "01/06/2021",
-    "01/07/2021",
-    "01/08/2021",
-    "01/09/2021",
-    "01/10/2021",
-    "01/11/2021",
-    "01/12/2021",
-  ];
+  const purchaseAngus = (input_weight / 2) * bull_purchase_price * 1.06;
+  const purchaseNelore = (input_weight / 2) * bull_purchase_price;
+  const purchaseCruzado = (input_weight / 2) * bull_purchase_price * 0.96;
 
-  const bull = await readFileStream(__dirname + "/../../../assets/bull.csv");
-  const corn = await readFileStream(__dirname + "/../../../assets/corn.csv");
+  const saleAngus = ((115 * 1.6 * 1.06 + input_weight) / 2) * bull_sale_price;
+  const saleNelore = ((120 * 1.2 + input_weight) / 2) * bull_sale_price;
+  const saleCruzado = ((130 * 1 * 0.96 + input_weight) / 2) * bull_sale_price;
 
-  const vars = datesBullSale.reduce((data, date, index) => {
-    var count = 0;
+  const coefAngus = saleAngus - purchaseAngus - corn_purchase_price * 4.6 * 115;
 
-    var cornBuy = corn.reduce((acc, cot) => {
-      if (count === 3) {
-        acc += 67.5 * cot.value;
-        count++;
-      }
+  const coefNelore =
+    saleNelore - purchaseNelore - corn_purchase_price * 4.6 * 120;
 
-      if (count === 1 || count === 2) {
-        acc += 135 * cot.value;
-        count++;
-      }
+  const coefCruzado =
+    saleCruzado - purchaseCruzado - corn_purchase_price * 4.6 * 130;
 
-      if (new Date(date).getTime() === cot.date.getTime()) {
-        acc = 121.5 * cot.value;
-        count++;
-      }
-      return acc;
-    }, 0);
-
-    const bullBuy = bull.reduce((acc, cot) => {
-      if (new Date(date).getTime() === cot.date.getTime()) {
-        acc = Number(weight_input) * cot.value;
-      }
-
-      return acc;
-    }, 0);
-
-    count = 0;
-
-    const bullSale = bull.reduce((acc, cot) => {
-      if (count === 3) {
-        acc = Number(weight_output) * cot.value;
-        count++;
-      }
-
-      if (count === 1 || count === 2) {
-        count++;
-      }
-
-      if (new Date(date).getTime() === cot.date.getTime()) {
-        count++;
-      }
-
-      return acc;
-    }, 0);
-
-    cornBuy += 408;
-
-    if (bullSale !== 0) {
-      data.push({
-        name: date,
-        coef: bullSale - bullBuy - cornBuy,
-      });
-    }
-    return data;
-  }, [] as Data[]);
-
-  const restrict = [
-    { name: "01/10/2020", coef: 1 },
-    { name: "01/11/2020", coef: 1 },
-    { name: "01/12/2020", coef: 1 },
-    { name: "01/01/2021", coef: 1 },
-    { name: "01/02/2021", coef: 1 },
-    { name: "01/03/2021", coef: 1 },
-    { name: "01/04/2021", coef: 1 },
-    { name: "01/05/2021", coef: 1 },
-    { name: "01/06/2021", coef: 1 },
-    { name: "01/07/2021", coef: 1 },
-    { name: "01/08/2021", coef: 1 },
-    { name: "01/09/2021", coef: 1 },
-  ];
-
-  const res = await glpk.solve(
-    {
-      name: "LP",
-      objective: {
-        direction: glpk.GLP_MAX,
-        name: "obj",
-        vars,
-      },
-      subjectTo: [
-        {
-          name: "cons1",
-          vars: restrict,
-          bnds: { type: glpk.GLP_UP, ub: 1.0, lb: 1.0 },
-        },
+  const params = {
+    name: "Confinamento",
+    objective: {
+      direction: glpk.GLP_MAX,
+      name: "obj",
+      vars: [
+        { name: "Angus", coef: coefAngus },
+        { name: "Nelore", coef: coefNelore },
+        { name: "Cruzado", coef: coefCruzado },
       ],
     },
-    options
-  );
+    subjectTo: [
+      {
+        name: "Area",
+        vars: [
+          { name: "Angus", coef: 20 },
+          { name: "Nelore", coef: 15 },
+          { name: "Cruzado", coef: 13 },
+        ],
+        bnds: { type: glpk.GLP_LO, lb: corral_area, ub: 0 },
+      },
+      {
+        name: "Lote Mínimo",
+        vars: [
+          { name: "Angus", coef: 1 },
+          { name: "Nelore", coef: 1 },
+          { name: "Cruzado", coef: 1 },
+        ],
+        bnds: { type: glpk.GLP_UP, ub: minimum_lot, lb: 500 },
+      },
+      {
+        name: "Produção de Angus",
+        vars: [
+          { name: "Angus", coef: productionAngus },
+          { name: "Nelore", coef: 0 },
+          { name: "Cruzado", coef: 0 },
+        ],
+        bnds: { type: glpk.GLP_UP, ub: angus_production, lb: 1000000 },
+      },
+      {
+        name: "Produção de Nelore e Cruzado",
+        vars: [
+          { name: "Angus", coef: 0 },
+          { name: "Nelore", coef: productionNelore },
+          { name: "Cruzado", coef: productionCruzado },
+        ],
+        bnds: { type: glpk.GLP_UP, ub: nelore_production, lb: 1000000 },
+      },
+      {
+        name: "Água",
+        vars: [
+          { name: "Angus", coef: 50 },
+          { name: "Nelore", coef: 40 },
+          { name: "Cruzado", coef: 45 },
+        ],
+        bnds: { type: glpk.GLP_LO, lb: water_capacity, ub: 0 },
+      },
+      {
+        name: "Cocho",
+        vars: [
+          { name: "Angus", coef: 0.35 },
+          { name: "Nelore", coef: 0.35 },
+          { name: "Cruzado", coef: 0.35 },
+        ],
+        bnds: { type: glpk.GLP_LO, lb: trough_length, ub: 0 },
+      },
+      {
+        name: "Orçamento",
+        vars: [
+          { name: "Angus", coef: purchaseAngus },
+          { name: "Nelore", coef: purchaseNelore },
+          { name: "Cruzado", coef: purchaseCruzado },
+        ],
+        bnds: { type: glpk.GLP_LO, lb: capital, ub: 0 },
+      },
+    ],
+    generals: ["Angus", "Nelore", "Cruzado"],
+  };
+  
+  const res: object = await glpk.solve(params, options);
 
-  const { vars: variables, z } = res.result;
-
-  const month = formatMonth(variables);
-
-  return response.json({
-    gain: z,
-    month
-  });
+  return response.json(res);
 });
 
 app.listen(3333, () => console.log("Server is running in port 3333"));

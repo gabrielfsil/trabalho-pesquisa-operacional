@@ -1,9 +1,11 @@
 import { Disclosure } from "@headlessui/react";
 import { MenuIcon, XIcon } from "@heroicons/react/outline";
-import { useForm } from "react-hook-form";
-import { Listbox, Transition } from "@headlessui/react";
-import { CheckIcon, SelectorIcon } from "@heroicons/react/solid";
-import { useState, Fragment } from "react";
+import { SubmitHandler, useForm } from "react-hook-form";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useCallback, useState } from "react";
+import { InputMask } from "./components/InputMask";
+import { api } from "./services/api";
 
 const logo = require("./assets/setting.png");
 
@@ -11,33 +13,91 @@ function classNames(...classes: any) {
   return classes.filter(Boolean).join(" ");
 }
 
-interface Breed {
-  label: string;
-  value: number;
+interface FormValues {
+  bull_purchase_price: string;
+  bull_sale_price: string;
+  corn_purchase_price: string;
+  capital: string;
+  minimum_lot: number;
+  corral_area: number;
+  water_capacity: number;
+  trough_length: number;
+  angus_production: number;
+  nelore_production: number;
+  input_weight: number;
 }
 
-function App() {
-  const {} = useForm();
-  const [selected, setSelected] = useState({
-    label: "Nelore",
-    value: 1.6,
-  } as Breed);
-  const [input, setInput] = useState<number>(12.5);
+const ValidationSchema = yup.object().shape({
+  bull_purchase_price: yup.string().required("Esse campo é obrigatório."),
+  bull_sale_price: yup.string().required("Esse campo é obrigatório."),
+  corn_purchase_price: yup.string().required("Esse campo é obrigatório."),
+  capital: yup.string().required("Esse campo é obrigatório."),
+  minimum_lot: yup.number().required("Esse campo é obrigatório."),
+  corral_area: yup.number().required("Esse campo é obrigatório."),
+  water_capacity: yup.number().required("Esse campo é obrigatório."),
+  trough_length: yup.number().required("Esse campo é obrigatório."),
+  angus_production: yup.number().required("Esse campo é obrigatório."),
+  nelore_production: yup.number().required("Esse campo é obrigatório."),
+  input_weight: yup.number().required("Esse campo é obrigatório."),
+});
 
-  const breeds = [
-    {
-      label: "Nelore",
-      value: 1.6,
+function App() {
+  const { register, handleSubmit } = useForm({
+    resolver: yupResolver(ValidationSchema),
+    defaultValues: {
+      bull_purchase_price: `R$294,00`,
+      bull_sale_price: `R$280,00`,
+      corn_purchase_price: `R$84,00`,
+      capital: `R$500.000,00`,
+      minimum_lot: 100,
+      corral_area: 1527,
+      water_capacity: 5000,
+      trough_length: 47,
+      angus_production: 1000,
+      nelore_production: 10000,
+      input_weight: 13,
     },
-    {
-      label: "Angus",
-      value: 1.8,
+  });
+
+  const handleSubmitForm: SubmitHandler<FormValues> = useCallback(
+    async (formValue) => {
+      api
+        .post("/optimize", {
+          bull_purchase_price:
+            Number(
+              formValue.bull_purchase_price.replace("R$", "").replace(",", ".")
+            ) / 15,
+          bull_sale_price:
+            Number(
+              formValue.bull_sale_price.replace("R$", "").replace(",", ".")
+            ) / 15,
+          corn_purchase_price:
+            Number(
+              formValue.corn_purchase_price.replace("R$", "").replace(",", ".")
+            ) / 60,
+          capital: Number(
+            formValue.capital
+              .replace("R$", "")
+              .replace(".", "")
+              .replace(",", ".")
+          ),
+          minimum_lot: formValue.minimum_lot,
+          corral_area: formValue.corral_area,
+          water_capacity: formValue.water_capacity,
+          trough_length: formValue.trough_length,
+          angus_production: formValue.angus_production,
+          nelore_production: formValue.nelore_production,
+          input_weight: formValue.input_weight * 30,
+        })
+        .then((response) => {
+          console.log(response.data);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     },
-    {
-      label: "Cruzado",
-      value: 1.2,
-    },
-  ];
+    []
+  );
 
   return (
     <>
@@ -99,11 +159,16 @@ function App() {
         <main>
           <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             <div className="px-4 py-6 sm:px-0">
+              <div className="p-4">
+                <p>
+                  A ferramenta abaixo irá calcular a proporção ideal de raças em
+                  um confinamento bovino, levando em consideração as raças
+                  Angus, Nelore e Cruzado.
+                </p>
+              </div>
               <div className="border-4 border-dashed border-gray-200 rounded-lg">
                 <div className="mt-5 md:mt-0 md:col-span-2">
-                  <form onSubmit={e => {
-                    e.preventDefault();
-                  }}>
+                  <form onSubmit={handleSubmit(handleSubmitForm)}>
                     <div className="shadow overflow-hidden sm:rounded-md">
                       <div className="px-4 py-5 bg-white sm:p-6">
                         <div className="grid grid-cols-6 gap-6">
@@ -112,117 +177,143 @@ function App() {
                               htmlFor="first-name"
                               className="block text-sm font-medium text-gray-700"
                             >
-                              Peso de Entrada (@)
+                              Preço de Compra - Boi (R$ / @)
                             </label>
-                            <input
-                              type="number"
-                              name="first-name"
-                              id="first-name"
-                              value={input}
-                              onChange={e => {
-                                setInput(Number(e.target.value))
-                              }}
-                              autoComplete="given-name"
-                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                            <InputMask
+                              {...register("bull_purchase_price")}
+                              className="p-2 mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                              defaultValue={"R$294,00"}
                             />
-                          </div>
-                          <div className="col-span-6 sm:col-span-3">
-                            <Listbox value={selected} onChange={setSelected}>
-                              {({ open }) => (
-                                <>
-                                  <Listbox.Label className="block text-sm font-medium text-gray-700">
-                                    Raça
-                                  </Listbox.Label>
-                                  <div className="mt-1 relative">
-                                    <Listbox.Button className="relative w-full bg-white border border-gray-300 rounded-md shadow-sm pl-3 pr-10 py-2 text-left cursor-default focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                      <span className="flex items-center">
-                                        <span className="ml-3 block truncate">
-                                          {selected.label}
-                                        </span>
-                                      </span>
-                                      <span className="ml-3 absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                        <SelectorIcon
-                                          className="h-5 w-5 text-gray-400"
-                                          aria-hidden="true"
-                                        />
-                                      </span>
-                                    </Listbox.Button>
-
-                                    <Transition
-                                      show={open}
-                                      as={Fragment}
-                                      leave="transition ease-in duration-100"
-                                      leaveFrom="opacity-100"
-                                      leaveTo="opacity-0"
-                                    >
-                                      <Listbox.Options className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-56 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
-                                        {breeds.map((breed) => (
-                                          <Listbox.Option
-                                            key={breed.value}
-                                            className={({ active }) =>
-                                              classNames(
-                                                active
-                                                  ? "text-white bg-indigo-600"
-                                                  : "text-gray-900",
-                                                "cursor-default select-none relative py-2 pl-3 pr-9"
-                                              )
-                                            }
-                                            value={breed}
-                                          >
-                                            {({ selected, active }) => (
-                                              <>
-                                                <div className="flex items-center">
-                                                  <span
-                                                    className={classNames(
-                                                      selected
-                                                        ? "font-semibold"
-                                                        : "font-normal",
-                                                      "ml-3 block truncate"
-                                                    )}
-                                                  >
-                                                    {breed.label}
-                                                  </span>
-                                                </div>
-
-                                                {selected ? (
-                                                  <span
-                                                    className={classNames(
-                                                      active
-                                                        ? "text-white"
-                                                        : "text-indigo-600",
-                                                      "absolute inset-y-0 right-0 flex items-center pr-4"
-                                                    )}
-                                                  >
-                                                    <CheckIcon
-                                                      className="h-5 w-5"
-                                                      aria-hidden="true"
-                                                    />
-                                                  </span>
-                                                ) : null}
-                                              </>
-                                            )}
-                                          </Listbox.Option>
-                                        ))}
-                                      </Listbox.Options>
-                                    </Transition>
-                                  </div>
-                                </>
-                              )}
-                            </Listbox>
                           </div>
                           <div className="col-span-6 sm:col-span-3">
                             <label
                               htmlFor="first-name"
                               className="block text-sm font-medium text-gray-700"
                             >
-                              Peso de Saida (@)
+                              Preço de Venda - Boi (R$ / @)
+                            </label>
+                            <InputMask
+                              {...register("bull_sale_price")}
+                              className="p-2 mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                              defaultValue={"R$280,00"}
+                            />
+                          </div>
+                          <div className="col-span-6 sm:col-span-3">
+                            <label
+                              htmlFor="first-name"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Preço de Compra - Milho (R$ / 60 kg)
+                            </label>
+                            <InputMask
+                              {...register("corn_purchase_price")}
+                              className="p-2 mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                              defaultValue={"R$84,00"}
+                            />
+                          </div>
+                          <div className="col-span-6 sm:col-span-3">
+                            <label
+                              htmlFor="first-name"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Peso de Entrada ( @ )
                             </label>
                             <input
-                              disabled
                               type="number"
-                              name="first-name"
-                              id="first-name"
-                              value={input + (selected.value * 105) / 30}
+                              {...register("input_weight")}
+                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                            />
+                          </div>
+                          <div className="col-span-6 sm:col-span-3">
+                            <label
+                              htmlFor="first-name"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Capital (R$)
+                            </label>
+                            <InputMask
+                              {...register("capital")}
+                              className="p-2 mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                              defaultValue={"R$500.000,00"}
+                            />
+                          </div>
+                          <div className="col-span-6 sm:col-span-3">
+                            <label
+                              htmlFor="first-name"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Lote Mínimo ( Cabeças )
+                            </label>
+                            <input
+                              type="number"
+                              {...register("minimum_lot")}
+                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                            />
+                          </div>
+                          <div className="col-span-6 sm:col-span-3">
+                            <label
+                              htmlFor="first-name"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Área do Curral ( m² )
+                            </label>
+                            <input
+                              type="number"
+                              {...register("corral_area")}
+                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                            />
+                          </div>
+                          <div className="col-span-6 sm:col-span-3">
+                            <label
+                              htmlFor="first-name"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Capacidade do Tanque de Água ( Litros )
+                            </label>
+                            <input
+                              type="number"
+                              {...register("water_capacity")}
+                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                            />
+                          </div>
+                          <div className="col-span-6 sm:col-span-3">
+                            <label
+                              htmlFor="first-name"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Comprimento de Cocho ( m )
+                            </label>
+                            <input
+                              type="number"
+                              {...register("trough_length")}
+                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                            />
+                          </div>
+                          <div className="col-span-6 sm:col-span-3"></div>
+                          <div className="col-span-6 sm:col-span-3">
+                            <label
+                              htmlFor="first-name"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Produção Mínima de Carne de Angus ( Kg )
+                            </label>
+                            <input
+                              type="number"
+                              {...register("angus_production")}
+                              className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                            />
+                          </div>
+                          <div className="col-span-6 sm:col-span-3">
+                            <label
+                              htmlFor="first-name"
+                              className="block text-sm font-medium text-gray-700"
+                            >
+                              Produção Mínima de Carne de Nelore e Cruzado ( Kg
+                              )
+                            </label>
+                            <input
+                              type="number"
+                              {...register("nelore_production")}
                               className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                             />
                           </div>
