@@ -60,7 +60,13 @@ interface Result {
 }
 
 function App() {
-  const { register, handleSubmit } = useForm({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    getValues,
+    setValue,
+  } = useForm({
     resolver: yupResolver(ValidationSchema),
     defaultValues: {
       bull_purchase_price: `R$294,00`,
@@ -98,7 +104,7 @@ function App() {
           capital: Number(
             formValue.capital
               .replace("R$", "")
-              .replace(".", "")
+              .replaceAll(".", "")
               .replace(",", ".")
           ),
           minimum_lot: formValue.minimum_lot,
@@ -203,6 +209,9 @@ function App() {
                               {...register("bull_purchase_price")}
                               className="p-2 mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                               defaultValue={"R$294,00"}
+                              onChange={(e) => {
+                                setValue("bull_purchase_price", e.target.value);
+                              }}
                             />
                           </div>
                           <div className="col-span-6 sm:col-span-3">
@@ -216,6 +225,9 @@ function App() {
                               {...register("bull_sale_price")}
                               className="p-2 mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                               defaultValue={"R$280,00"}
+                              onChange={(e) => {
+                                setValue("bull_sale_price", e.target.value);
+                              }}
                             />
                           </div>
                           <div className="col-span-6 sm:col-span-3">
@@ -229,6 +241,9 @@ function App() {
                               {...register("corn_purchase_price")}
                               className="p-2 mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                               defaultValue={"R$84,00"}
+                              onChange={(e) => {
+                                setValue("corn_purchase_price", e.target.value);
+                              }}
                             />
                           </div>
                           <div className="col-span-6 sm:col-span-3">
@@ -252,9 +267,12 @@ function App() {
                               Capital (R$)
                             </label>
                             <InputMask
-                              {...register("capital")}
                               className="p-2 mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                               defaultValue={"R$500.000,00"}
+                              {...register("capital")}
+                              onChange={(e) => {
+                                setValue("capital", e.target.value);
+                              }}
                             />
                           </div>
                           <div className="col-span-6 sm:col-span-3">
@@ -356,7 +374,10 @@ function App() {
               <>
                 <h3>Resultado:</h3>
                 <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
-                  <button onClick={() => setResult(undefined)} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  <button
+                    onClick={() => setResult(undefined)}
+                    className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
                     Limpar
                   </button>
                 </div>

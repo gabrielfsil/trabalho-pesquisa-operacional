@@ -88,7 +88,7 @@ app.post("/optimize", async (request, response) => {
           { name: "Nelore", coef: 1 },
           { name: "Cruzado", coef: 1 },
         ],
-        bnds: { type: glpk.GLP_LO, lb: minimum_lot, ub: 500 },
+        bnds: { type: glpk.GLP_LO, lb: minimum_lot },
       },
       {
         name: "Producao de Angus",
@@ -97,7 +97,7 @@ app.post("/optimize", async (request, response) => {
           { name: "Nelore", coef: 0 },
           { name: "Cruzado", coef: 0 },
         ],
-        bnds: { type: glpk.GLP_LO, lb: angus_production, ub: 1000000 },
+        bnds: { type: glpk.GLP_LO, lb: angus_production },
       },
       {
         name: "Producao de Nelore e Cruzado",
@@ -106,7 +106,7 @@ app.post("/optimize", async (request, response) => {
           { name: "Nelore", coef: productionNelore },
           { name: "Cruzado", coef: productionCruzado },
         ],
-        bnds: { type: glpk.GLP_LO, lb: nelore_production, ub: 1000000 },
+        bnds: { type: glpk.GLP_LO, lb: nelore_production },
       },
       {
         name: "Agua",
@@ -138,16 +138,16 @@ app.post("/optimize", async (request, response) => {
     ],
     generals: ["Angus", "Nelore", "Cruzado"],
     options: {
-      msglev: 4
-    }
+      msglev: 4,
+    },
   };
-  
+
   const result: object = await glpk.solve(params, options);
 
-  const cplex = await glpk.write(params)
+  const cplex = await glpk.write(params);
   return response.json({
     result,
-    cplex
+    cplex,
   });
 });
 
