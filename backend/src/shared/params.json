@@ -1,0 +1,78 @@
+{
+  "name": "Confinamento",
+  "objective": {
+    "direction": 2,
+    "name": "obj",
+    "vars": [
+      { "name": "Angus", "coef": 668.4533333333325 },
+      { "name": "Nelore", "coef": 389.1999999999996 },
+      { "name": "Cruzado", "coef": 298.4799999999999 }
+    ]
+  },
+  "subjectTo": [
+    {
+      "name": "Area",
+      "vars": [
+        { "name": "Angus", "coef": 20 },
+        { "name": "Nelore", "coef": 15 },
+        { "name": "Cruzado", "coef": 13 }
+      ],
+      "bnds": { "type": 3, "ub": 1527, "lb": 0 }
+    },
+    {
+      "name": "Lote Mínimo",
+      "vars": [
+        { "name": "Angus", "coef": 1 },
+        { "name": "Nelore", "coef": 1 },
+        { "name": "Cruzado", "coef": 1 }
+      ],
+      "bnds": { "type": 2, "lb": 100, "ub": 500 }
+    },
+    {
+      "name": "Produção de Angus",
+      "vars": [
+        { "name": "Angus", "coef": 287 },
+        { "name": "Nelore", "coef": 0 },
+        { "name": "Cruzado", "coef": 0 }
+      ],
+      "bnds": { "type": 2, "lb": 1000, "ub": 1000000 }
+    },
+    {
+      "name": "Produção de Nelore e Cruzado",
+      "vars": [
+        { "name": "Angus", "coef": 0 },
+        { "name": "Nelore", "coef": 267 },
+        { "name": "Cruzado", "coef": 260 }
+      ],
+      "bnds": { "type": 2, "lb": 10000, "ub": 1000000 }
+    },
+    {
+      "name": "Água",
+      "vars": [
+        { "name": "Angus", "coef": 50 },
+        { "name": "Nelore", "coef": 40 },
+        { "name": "Cruzado", "coef": 45 }
+      ],
+      "bnds": { "type": 3, "ub": 5000, "lb": 0 }
+    },
+    {
+      "name": "Cocho",
+      "vars": [
+        { "name": "Angus", "coef": 0.35 },
+        { "name": "Nelore", "coef": 0.35 },
+        { "name": "Cruzado", "coef": 0.35 }
+      ],
+      "bnds": { "type": 3, "ub": 47 }
+    },
+    {
+      "name": "Orçamento",
+      "vars": [
+        { "name": "Angus", "coef": 4051.3200000000006 },
+        { "name": "Nelore", "coef": 3822.0000000000005 },
+        { "name": "Cruzado", "coef": 3669.1200000000003 }
+      ],
+      "bnds": { "ub": 500000 }
+    }
+  ],
+  "generals": ["Angus", "Nelore", "Cruzado"]
+}

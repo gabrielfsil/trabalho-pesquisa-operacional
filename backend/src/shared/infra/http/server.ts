@@ -35,7 +35,7 @@ app.post("/optimize", async (request, response) => {
     msglev: glpk.GLP_MSG_ALL,
     presol: true,
     cb: {
-      call: (progress: any) => console.log(progress),
+      call: (progress: any) => {},
       each: 1,
     },
   };
@@ -79,43 +79,43 @@ app.post("/optimize", async (request, response) => {
           { name: "Nelore", coef: 15 },
           { name: "Cruzado", coef: 13 },
         ],
-        bnds: { type: glpk.GLP_LO, lb: corral_area, ub: 0 },
+        bnds: { type: glpk.GLP_UP, ub: corral_area, lb: 0 },
       },
       {
-        name: "Lote Mínimo",
+        name: "Lote Minimo",
         vars: [
           { name: "Angus", coef: 1 },
           { name: "Nelore", coef: 1 },
           { name: "Cruzado", coef: 1 },
         ],
-        bnds: { type: glpk.GLP_UP, ub: minimum_lot, lb: 500 },
+        bnds: { type: glpk.GLP_LO, lb: minimum_lot, ub: 500 },
       },
       {
-        name: "Produção de Angus",
+        name: "Producao de Angus",
         vars: [
           { name: "Angus", coef: productionAngus },
           { name: "Nelore", coef: 0 },
           { name: "Cruzado", coef: 0 },
         ],
-        bnds: { type: glpk.GLP_UP, ub: angus_production, lb: 1000000 },
+        bnds: { type: glpk.GLP_LO, lb: angus_production, ub: 1000000 },
       },
       {
-        name: "Produção de Nelore e Cruzado",
+        name: "Producao de Nelore e Cruzado",
         vars: [
           { name: "Angus", coef: 0 },
           { name: "Nelore", coef: productionNelore },
           { name: "Cruzado", coef: productionCruzado },
         ],
-        bnds: { type: glpk.GLP_UP, ub: nelore_production, lb: 1000000 },
+        bnds: { type: glpk.GLP_LO, lb: nelore_production, ub: 1000000 },
       },
       {
-        name: "Água",
+        name: "Agua",
         vars: [
           { name: "Angus", coef: 50 },
           { name: "Nelore", coef: 40 },
           { name: "Cruzado", coef: 45 },
         ],
-        bnds: { type: glpk.GLP_LO, lb: water_capacity, ub: 0 },
+        bnds: { type: glpk.GLP_UP, ub: water_capacity, lb: 0 },
       },
       {
         name: "Cocho",
@@ -124,24 +124,31 @@ app.post("/optimize", async (request, response) => {
           { name: "Nelore", coef: 0.35 },
           { name: "Cruzado", coef: 0.35 },
         ],
-        bnds: { type: glpk.GLP_LO, lb: trough_length, ub: 0 },
+        bnds: { type: glpk.GLP_UP, ub: trough_length, lb: 0 },
       },
       {
-        name: "Orçamento",
+        name: "Orcamento",
         vars: [
           { name: "Angus", coef: purchaseAngus },
           { name: "Nelore", coef: purchaseNelore },
           { name: "Cruzado", coef: purchaseCruzado },
         ],
-        bnds: { type: glpk.GLP_LO, lb: capital, ub: 0 },
+        bnds: { type: glpk.GLP_UP, ub: capital, lb: 0 },
       },
     ],
     generals: ["Angus", "Nelore", "Cruzado"],
+    options: {
+      msglev: 4
+    }
   };
   
-  const res: object = await glpk.solve(params, options);
+  const result: object = await glpk.solve(params, options);
 
-  return response.json(res);
+  const cplex = await glpk.write(params)
+  return response.json({
+    result,
+    cplex
+  });
 });
 
 app.listen(3333, () => console.log("Server is running in port 3333"));

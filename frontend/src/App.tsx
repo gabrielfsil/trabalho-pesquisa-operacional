@@ -41,6 +41,24 @@ const ValidationSchema = yup.object().shape({
   input_weight: yup.number().required("Esse campo é obrigatório."),
 });
 
+interface Result {
+  cplex: string;
+  result: {
+    name: string;
+    time: number;
+    result: {
+      status: number;
+      z: number;
+      vars: {
+        Angus: number;
+        Nelore: number;
+        Cruzado: number;
+      };
+      dual?: {};
+    };
+  };
+}
+
 function App() {
   const { register, handleSubmit } = useForm({
     resolver: yupResolver(ValidationSchema),
@@ -58,6 +76,8 @@ function App() {
       input_weight: 13,
     },
   });
+
+  const [result, setResult] = useState<Result>();
 
   const handleSubmitForm: SubmitHandler<FormValues> = useCallback(
     async (formValue) => {
@@ -90,7 +110,7 @@ function App() {
           input_weight: formValue.input_weight * 30,
         })
         .then((response) => {
-          console.log(response.data);
+          setResult(response.data);
         })
         .catch((err) => {
           console.log(err);
@@ -332,9 +352,51 @@ function App() {
                 </div>
               </div>
             </div>
-            <div className="px-4 py-6 sm:px-0">
-              <div className="border-4 border-dashed border-gray-200 rounded-lg h-96"></div>
-            </div>
+            {result && (
+              <>
+                <h3>Resultado:</h3>
+                <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
+                  <button onClick={() => setResult(undefined)} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Limpar
+                  </button>
+                </div>
+                <div className="px-4 py-6 sm:px-0">
+                  <div className="border-4 border-dashed border-gray-200 rounded-lg p-5">
+                    <>
+                      <div className="grid grid-cols-8 gap-6">
+                        <div className="col-span-8 sm:col-span-2">
+                          <p>Lucro Obitido:</p>
+                          <b>
+                            {Intl.NumberFormat("pt-BR", {
+                              style: "currency",
+                              currency: "BRL",
+                            }).format(result.result.result.z)}
+                          </b>
+                        </div>
+                        <div className="col-span-8 sm:col-span-2">
+                          <p>Quant. de Angus:</p>
+                          <b>{result.result.result.vars.Angus}</b>
+                        </div>
+                        <div className="col-span-8 sm:col-span-2">
+                          <p>Quant. de Nelore:</p>
+                          <b>{result.result.result.vars.Nelore}</b>
+                        </div>
+                        <div className="col-span-8 sm:col-span-2">
+                          <p>Quant. de Cruzado:</p>
+                          <b>{result.result.result.vars.Cruzado}</b>
+                        </div>
+                      </div>
+                    </>
+                  </div>
+                </div>
+                <h3>Modelo:</h3>
+                <div className="px-4 py-6 sm:px-0">
+                  <div className="border-4 border-dashed border-gray-200 rounded-lg p-5">
+                    <pre>{result.cplex}</pre>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </main>
       </div>
